@@ -1,43 +1,50 @@
 from Utils import _BUFFER_SIZE
+from threading import Timer
 
 class RdtSender:
     def __init__(self, socket):
         self.socket = socket
-        self.ack = '0'
         self.sequence_number = '0'
-        self.timer = 5
+        # Define estado de espera pela chamada de cima
+        self.waiting = True
         
     def __check_ack(self, ack):
-        return ack == self.ack
+        return ack == self.sequence_number
 
-    def __reset_timer(self):
-        self.timer = 5
+    def __update_seqnum(self):
+        self.sequence_number = '0' if self.sequence_number == '1' else '1' 
+    
+    def __timeout(self, chunk, address):
+        print("Timeout!")
+        # Retransmite pacote
+        self.send(chunk, address)
 
-    def __nott(self, msg):
-        return '0' if msg == '1' else '1' 
+    def __wait_ack(self, chunk, address):
+        timer = Timer(10.0, self.__timeout, args = (chunk, address))
+        timer.start()
         
+        ack, address = self.socket.recvfrom(_BUFFER_SIZE)
+        print("Ack received ", ack.decode(), " | Ack desired", self.sequence_number)
+
+        if self.__check_ack(ack.decode()):
+            print("The ack is correct!", ack.decode())
+            print("_____________\n")
+            # Desliga timer
+            timer.cancel()
+            # Atualiza o numero de sequencia
+            self.__update_seqnum()
+            # Volta para o estado de espera, ou seja, pode enviar dados
+            self.waiting = True
+            
     def send(self, chunk, address):
+        # Sai do estado de espera
+        self.waiting = False
+
         pkt = self.sequence_number + "," + chunk
-        print("Message:", pkt)
+        print("Pkt was built with seqnum ", self.sequence_number, " and message ", chunk)
+
         self.socket.sendto(pkt.encode(), address)
+        self.__wait_ack(chunk, address)
 
-        # liga o temporizador
-        while self.timer:
-            self.timer -= 1
-            print(self.timer)
-            # espera pelo ack
-            ack, address = self.socket.recvfrom(_BUFFER_SIZE)
-            if self.__check_ack(ack.decode()):
-                print("Ack recebido:", ack.decode())
-                print("\n_____________\n\n")
-                self.__reset_timer()
-                # ira mandar outro pacote
-                self.sequence_number = self.__nott(self.sequence_number)
-                # ira esperar ack de outro pacote
-                self.ack = self.__nott(self.ack)
-                return
-
-        # deu timeout
-        print("deu timeout!!!")
-        self.__reset_timer()
-        self.rdt_sender(chunk)
+    def is_waiting_call(self):
+        return self.waiting

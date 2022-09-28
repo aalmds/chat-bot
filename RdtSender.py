@@ -24,10 +24,10 @@ class RdtSender:
         timer.start()
         
         ack, address = self.socket.recvfrom(_BUFFER_SIZE)
-        print("Ack received ", ack.decode(), " | Ack desired", self.sequence_number)
+        print("Waiting for ack", self.sequence_number)
 
         if self.__check_ack(ack.decode()):
-            print("The ack is correct!", ack.decode())
+            print("The ack is correct!")
             print("_____________\n")
             # Desliga timer
             timer.cancel()
@@ -41,7 +41,7 @@ class RdtSender:
         self.waiting = False
 
         pkt = self.sequence_number + "," + chunk
-        print("Pkt was built with seqnum ", self.sequence_number, " and message ", chunk)
+        print(f"Pkt was built with: ({self.sequence_number}, \"{chunk}\")")
 
         self.socket.sendto(pkt.encode(), address)
         self.__wait_ack(chunk, address)

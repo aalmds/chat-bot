@@ -10,19 +10,18 @@ class Client:
         self.rdt_receiver = RdtReceiver(self.clientSocket)
 
     def run(self):
-        print("The client is on!")
-
-        if self.rdt_sender.is_waiting_call():
-            print("Sending new package in client...")
-            self.rdt_sender.send("Testing client", (_SERVER, _SERVER_PORT))  
+        print("The client is on!\n")
 
         a = 5
         while a:
             a -= 1  
+            if self.rdt_sender.is_waiting_call():
+                print("Sending new package in client...")
+                self.rdt_sender.send("Hello from client!", (_SERVER, _SERVER_PORT))  
+
             message, serverAddress = self.clientSocket.recvfrom(_BUFFER_SIZE)
             seqnum, data = message.decode().split(',')
-            
-            print(f"Pkt received with seqnum = {seqnum} and data = {data}")
+            print(f"Package received with: ({seqnum}, \"{data}\"")
             self.rdt_receiver.receive(seqnum, (_SERVER, _SERVER_PORT))
         
         self.clientSocket.close()

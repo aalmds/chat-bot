@@ -16,12 +16,12 @@ class RdtReceiver:
             self.socket.sendto(ack, address)
             # Passa a esperar por outro pacote
             self.sequence_number = self.__nott()
-            print("Package is correct, sending ack ", ack.decode())
+            print("Package is correct, sending ack", ack.decode())
             print("_____________\n")
         else:
             # Recebeu um duplicata
             ack = self.__nott().encode()
             # Reenvia ack do anterior, confirmando que ele já tinha sido recebido
             self.socket.sendto(ack, address)
-            print("Duplicate detected, resending ack ", ack.decode())
+            print("Duplicate detected, resending ack", ack.decode())
             print("_____________\n")

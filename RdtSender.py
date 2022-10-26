@@ -24,7 +24,7 @@ class RdtSender:
         self.waiting = False
 
         # Criando o pacote com número de sequência e dado.
-        pkt = self.sequence_number + "," + chunk
+        pkt = self.sequence_number + "%&%" + chunk
 
         # Enquanto está no estado de espera pelo ack correto, continua retransmitindo o último pacote enviado após timeout.
         while not self.waiting:
@@ -33,7 +33,7 @@ class RdtSender:
             self.socket.sendto(pkt.encode(), address)
 
             # Ligando o temporizador
-            self.socket.settimeout(5)
+            self.socket.settimeout(0.5)
 
             try:
                 ack, address = self.socket.recvfrom(_BUFFER_SIZE)

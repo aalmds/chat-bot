@@ -4,8 +4,8 @@ from Utils import _BUFFER_SIZE
 
 
 class RdtReceiver:
-    def __init__(self, socket):
-        self.sequence_number = '0'
+    def __init__(self, seqnum, socket):
+        self.sequence_number = seqnum
         self.socket = socket
 
     # Função que verifica se o número de sequência do pacote recebido é igual ao esperado.
@@ -30,7 +30,7 @@ class RdtReceiver:
 
         # Enviando o ack referente ao pacote que foi recebido corretamente.
         ack = self.sequence_number.encode()
-        print(f"Package is correct, sending ack {ack.decode()}!\n\n")
+        print(f"Package is correct, sending ack {ack.decode()}!")
         self.socket.sendto(ack, address)
 
         # Atualizando o número de sequência esperado.

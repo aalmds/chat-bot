@@ -1,20 +1,18 @@
 import socket
 from RdtReceiver import RdtReceiver
 from RdtSender import RdtSender
-from Utils import _SERVER, _SERVER_PORT, _BUFFER_SIZE, _COMMANDS, time
+from Utils import _SERVER, _SERVER_PORT, _BUFFER_SIZE, _CONNECT, _BAN, _BYE, _INBOX, _LIST, time
 from threading import Thread, Lock
 
 class Server():
     def __init__(self):
         self.socket_lock = Lock()
         self.serverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)    
-        
-        self.clients = {}
 
         self.buffer_lock = Lock()
         self.buffer = {}
 
-        self.threads = []
+        self.clients = {}
 
     def __send(self, clientAddress):    
         rdt = self.clients[clientAddress]['sender']
@@ -27,12 +25,62 @@ class Server():
                     self.buffer[clientAddress] = []
             self.buffer_lock.release()
 
-    def __update_buffer(self, origin, message):
+    def __create_message(self, clientAddress, message):
+        return "[" + time() + "] " + self.clients[clientAddress]['name'] + ': ' + message
+
+    def __connect_new_client(self, message, clientAddress):
+        name = message.split("hi, meu nome eh ")[-1]
+        print(f"@{name} se conectou ao chat!")
+
+        self.clients[clientAddress] = {
+            'name': name, 
+            'sender': RdtSender(self.serverSocket), 
+            'receiver': RdtReceiver(self.serverSocket, '1')
+        }
+
+        self.__broadcast(clientAddress, "@" + name + " entrou na sala")
+
+        self.buffer_lock.acquire()
+        self.buffer[clientAddress] = []
+        self.buffer_lock.release()
+
+        thread = Thread(target=self.__send, args=(clientAddress,))
+        thread.daemon = True
+        thread.start()
+
+    def __bye(self, clientAddress):
+        print(f"@{self.clients[clientAddress]['name']} se desconectou do chat!")
+        del self.clients[clientAddress]
+
+    def __list_clients(self, clientAddress):
+        message = '\nLista de usuários:\n'
+
+        for client in self.clients.values():
+            message += '@' + str(client['name']) + '\n'
+
+        self.buffer_lock.acquire()
+        self.buffer[clientAddress].append(message)
+        self.buffer_lock.release()
+
+    def __inbox(self, clientAddress, message):
+        for address in self.clients.keys():
+            client_name = self.clients[address]['name']
+            size = len(client_name) + 1
+            if ("@" + client_name) == message[:size]:
+                message = message[size+1:]
+                message = self.__create_message(clientAddress, message)
+                
+                self.buffer_lock.acquire()
+                self.buffer[address].append(message)
+                self.buffer_lock.release()
+                
+                break
+
+    def __broadcast(self, origin, message):
         self.buffer_lock.acquire()
         for clientAddress in self.buffer.keys():
             if origin != clientAddress:
                 self.buffer[clientAddress].append(message)
-
         self.buffer_lock.release()
 
     def run(self):
@@ -51,42 +99,30 @@ class Server():
 
             self.socket_lock.release()
             if '%&%' in clientMessage.decode():
-                addresses = self.clients.keys()
-                if not clientAddress in addresses:
-                    seqnum, message = clientMessage.decode().split('%&%')
-                    
+                seqnum, message = clientMessage.decode().split('%&%')
+                if not clientAddress in self.clients.keys():                   
                     self.socket_lock.acquire()
                     rdt_receiver.receive(clientAddress, seqnum, message)
                     self.socket_lock.release()
                 
-                    if _COMMANDS[0] in message:
-                        name = message.split("hi, meu nome eh ")[-1]
-
-                        print(f"@{name} se conectou ao chat!")
-
-                        self.clients[clientAddress] = {
-                            'name': name, 
-                            'sender': RdtSender(self.serverSocket), 
-                            'receiver': RdtReceiver(self.serverSocket, '1')
-                        }
-
-                        self.__update_buffer(clientAddress, "@" + name + " entrou na sala")
-
-                        self.buffer_lock.acquire()
-                        self.buffer[clientAddress] = []
-                        self.buffer_lock.release()
-
-                        self.threads.append(Thread(target=self.__send, args=(clientAddress,)))
-                        self.threads[-1].daemon = True
-                        self.threads[-1].start()
+                    if _CONNECT in message:
+                        self.__connect_new_client(message, clientAddress)
+                       
                 else:
-                    seqnum, message = clientMessage.decode().split('%&%')
                     self.socket_lock.acquire()
                     message = self.clients[clientAddress]['receiver'].receive(clientAddress, seqnum, message)
                     self.socket_lock.release()
-
-                    message = "[" + time() + "] " + self.clients[clientAddress]['name'] + ': ' + message
-                    self.__update_buffer(clientAddress, message)
+                    if _BYE == message:
+                        self.__bye(clientAddress)
+                    elif _LIST == message:
+                        self.__list_clients(clientAddress)
+                    elif _INBOX in message[0]:
+                        self.__inbox(clientAddress, message)
+                    elif _BAN in message[:len(_BAN)]:
+                        print('ban')
+                    else:
+                        message = self.__create_message(clientAddress, message)
+                        self.__broadcast(clientAddress, message)
             else:
                 self.clients[clientAddress]['sender'].set_ack(clientMessage.decode())
                     

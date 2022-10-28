@@ -2,33 +2,40 @@ import socket
 from Utils import _SERVER, _SERVER_PORT, _BUFFER_SIZE
 from RdtSender import RdtSender
 from RdtReceiver import RdtReceiver
-
+from threading import Thread, Lock
 
 class Client:
     def __init__(self):
+        self.socket_lock = Lock()
         self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        
         self.rdt_sender = RdtSender(self.clientSocket)
         self.rdt_receiver = RdtReceiver(self.clientSocket)
 
-    def run(self):
-        print("The client is on!\n")
-
-        for i in range(0, 2):
-            # Enviando um novo pacote para o servidor caso o transmissor esteja dinsponível para enviar.
+        self.ths = Thread(target=self.__send)
+        self.ths.daemon = True
+                
+    def __send(self):
+        while True:
+            message = input()
             if self.rdt_sender.is_waiting_call():
-                print("Sending new package in client...")
-                # Enviando a mensagem por um canal confiável de transferência de dados.
-                self.rdt_sender.send("Hello from client!",
-                                     (_SERVER, _SERVER_PORT))
+                self.socket_lock.acquire()
+                self.rdt_sender.send(message, (_SERVER, _SERVER_PORT)) 
+                self.socket_lock.release()
 
-            print("Waiting for server's message...")
+    def run(self):
+        self.ths.start()
+
+        while True:
             message, serverAddress = self.clientSocket.recvfrom(_BUFFER_SIZE)
-            seqnum, _ = message.decode().split(',')
-            # Recebendo a mensagem por um canal confiável de transferência de dados.
-            self.rdt_receiver.receive(serverAddress, seqnum)
-
-        self.clientSocket.close()
-
+            if '%&%' in message.decode():
+                seqnum, message = message.decode().split('%&%')
+                print(message)         
+                self.socket_lock.acquire()
+                self.rdt_receiver.receive(serverAddress, seqnum, message)
+                self.socket_lock.release()
+            else:
+                self.rdt_sender.set_ack(message.decode())
 
 if __name__ == "__main__":
     client = Client()

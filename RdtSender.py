@@ -1,6 +1,4 @@
-import socket
 import time
-from Utils import _BUFFER_SIZE
 
 class RdtSender:
     def __init__(self, socket, timeout=20):
@@ -16,7 +14,6 @@ class RdtSender:
 
     # Função que verifica se o ack recebido é referente ao pacote que foi enviado por último.
     def __check_ack(self):
-        #print("Checando ack")
         return self.sequence_number == self.ack
 
     # Função que atualiza o número de sequência.
@@ -31,21 +28,16 @@ class RdtSender:
         pkt = self.sequence_number + "%&%" + chunk
         start_time = time.time()
 
-        #print(f"Sending package with: ({self.sequence_number}, \"{chunk}\")")
         self.socket.sendto(pkt.encode(), address)
         # Enquanto está no estado de espera pelo ack correto, continua retransmitindo o último pacote enviado após timeout.
         while not self.waiting:
             if time.time() - start_time > self.timeout:
-                print(
-                    f"Sending package with: ({self.sequence_number}, \"{chunk}\")")
                 self.socket.sendto(pkt.encode(), address)
                 start_time = time.time()
                 continue
-                # print("esperando receber ack...")
 
             if self.__check_ack():
                 self.ack = -1
-                #print("The ack is correct!\n\n")
                 self.__update_seqnum()
                 self.waiting = True
     

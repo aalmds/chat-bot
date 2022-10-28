@@ -49,7 +49,9 @@ class Server():
         thread.start()
 
     def __bye(self, clientAddress):
-        print(f"@{self.clients[clientAddress]['name']} se desconectou do chat!")
+        name = self.clients[clientAddress]['name']
+        print(f"@{name} se desconectou do chat!")
+        self.__broadcast(clientAddress, "@" + name + " saiu da sala")
         del self.clients[clientAddress]
 
     def __list_clients(self, clientAddress):
@@ -100,9 +102,9 @@ class Server():
             self.socket_lock.release()
             if '%&%' in clientMessage.decode():
                 seqnum, message = clientMessage.decode().split('%&%')
-                if not clientAddress in self.clients.keys():                   
+                if not clientAddress in self.clients.keys():             
                     self.socket_lock.acquire()
-                    rdt_receiver.receive(clientAddress, seqnum, message)
+                    message = rdt_receiver.receive(clientAddress, seqnum, message)
                     self.socket_lock.release()
                 
                     if _CONNECT in message:
@@ -112,6 +114,7 @@ class Server():
                     self.socket_lock.acquire()
                     message = self.clients[clientAddress]['receiver'].receive(clientAddress, seqnum, message)
                     self.socket_lock.release()
+
                     if _BYE == message:
                         self.__bye(clientAddress)
                     elif _LIST == message:

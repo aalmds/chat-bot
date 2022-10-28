@@ -1,8 +1,6 @@
 from Utils import _BUFFER_SIZE
 
 # Classe de abstração para a máquina de estados do protocolo de transferência confiável do receptor.
-
-
 class RdtReceiver:
     def __init__(self, socket, seqnum='0'):
         self.sequence_number = seqnum
@@ -22,17 +20,14 @@ class RdtReceiver:
         while not self.__check_pkt(seqnum):
             # Criando e reenviando o ack do pacote anterior já que houve identificação de duplicata.
             ack = self.__nott().encode()
-            #print(f"Duplicate detected, resending ack {ack.decode()}!\n\n")
             self.socket.sendto(ack, address)
 
             message, _ = self.socket.recvfrom(_BUFFER_SIZE)
             
-            #print("To fazendo split po no rdtreceiver:", message.decode())
             seqnum, message = message.decode().split('%&%')
 
         # Enviando o ack referente ao pacote que foi recebido corretamente.
         ack = self.sequence_number.encode()
-        #print(f"Package is correct, sending ack {ack.decode()}!")
         self.socket.sendto(ack, address)
 
         # Atualizando o número de sequência esperado.

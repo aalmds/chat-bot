@@ -1,5 +1,6 @@
 import socket
-from Utils import _SERVER, _SERVER_PORT, _BUFFER_SIZE
+from termcolor import colored
+from Utils import _SERVER, _SERVER_PORT, _BUFFER_SIZE, time
 from RdtSender import RdtSender
 from RdtReceiver import RdtReceiver
 from threading import Thread, Lock
@@ -18,6 +19,8 @@ class Client:
     def __send(self):
         while True:
             message = input()
+            print ("\033[A                             \033[A")
+            print(f'[{time()}] Você: {message}')
             if self.rdt_sender.is_waiting_call():
                 self.socket_lock.acquire()
                 self.rdt_sender.send(message, (_SERVER, _SERVER_PORT)) 
@@ -30,7 +33,7 @@ class Client:
             message, serverAddress = self.clientSocket.recvfrom(_BUFFER_SIZE)
             if '%&%' in message.decode():
                 seqnum, message = message.decode().split('%&%')
-                print(message)         
+                print(colored(str(message), 'cyan'))         
                 self.socket_lock.acquire()
                 self.rdt_receiver.receive(serverAddress, seqnum, message)
                 self.socket_lock.release()

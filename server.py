@@ -1,8 +1,7 @@
 import socket
-from datetime import datetime
 from RdtReceiver import RdtReceiver
 from RdtSender import RdtSender
-from Utils import _SERVER, _SERVER_PORT, _BUFFER_SIZE, _COMMANDS
+from Utils import _SERVER, _SERVER_PORT, _BUFFER_SIZE, _COMMANDS, time
 from threading import Thread, Lock
 
 class Server():
@@ -16,9 +15,6 @@ class Server():
         self.buffer = {}
 
         self.threads = []
-
-    def __time(self):
-        return datetime.now().strftime("%H:%M:%S")
 
     def __send(self, clientAddress):    
         rdt = self.clients[clientAddress]['sender']
@@ -89,7 +85,7 @@ class Server():
                     message = self.clients[clientAddress]['receiver'].receive(clientAddress, seqnum, message)
                     self.socket_lock.release()
 
-                    message = "[" + self.__time() + "] " + self.clients[clientAddress]['name'] + ': ' + message
+                    message = "[" + time() + "] " + self.clients[clientAddress]['name'] + ': ' + message
                     self.__update_buffer(clientAddress, message)
             else:
                 self.clients[clientAddress]['sender'].set_ack(clientMessage.decode())

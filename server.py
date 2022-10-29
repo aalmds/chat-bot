@@ -1,3 +1,4 @@
+from http import client
 import socket
 from RdtReceiver import RdtReceiver
 from RdtSender import RdtSender
@@ -13,6 +14,7 @@ class Server():
         self.buffer = {}
 
         self.clients = {}
+        self.ban = {} 
 
     def __send(self, clientAddress):    
         rdt = self.clients[clientAddress]['sender']
@@ -36,9 +38,20 @@ class Server():
 
     def __create_message(self, clientAddress, message):
         return "[" + time() + "] " + self.clients[clientAddress]['name'] + ': ' + message
-
+    
+    def __update_specific_buffer(self, clientAddress, message):
+        self.buffer_lock.acquire()
+        self.buffer[clientAddress].append(message)
+        self.buffer_lock.release()
+        
     def __connect_new_client(self, message, clientAddress):
+        #TODO: decidir se vai ser por nome ou endereço
         name = message.split("hi, meu nome eh ")[-1]
+
+        if name in self.ban.keys() and self.ban[name] == 'ban':
+            self.__update_specific_buffer(clientAddress, "Você não pode se conectar porque já foi banido.")
+            return
+        
         print(f"@{name} se conectou ao chat!")
 
         self.clients[clientAddress] = {
@@ -62,19 +75,14 @@ class Server():
         print(f"@{name} se desconectou do chat!")
         self.__broadcast(clientAddress, "@" + name + " saiu da sala")
 
-        self.buffer_lock.acquire()
-        self.buffer[clientAddress].append(_DISCONNECT)
-        self.buffer_lock.release()
-
+        self.__update_specific_buffer(clientAddress, _DISCONNECT)
+        
     def __list_clients(self, clientAddress):
         message = '\nLista de usuários:\n'
 
         for client in self.clients.values():
             message += '@' + str(client['name']) + '\n'
-
-        self.buffer_lock.acquire()
-        self.buffer[clientAddress].append(message)
-        self.buffer_lock.release()
+        self.__update_specific_buffer(clientAddress, message)
 
     def __inbox(self, clientAddress, message):
         for address in self.clients.keys():
@@ -83,11 +91,7 @@ class Server():
             if ("@" + client_name) == message[:size]:
                 message = message[size+1:]
                 message = self.__create_message(clientAddress, message)
-                
-                self.buffer_lock.acquire()
-                self.buffer[address].append(message)
-                self.buffer_lock.release()
-                
+                self.__update_specific_buffer(address, message)
                 break
 
     def __broadcast(self, origin, message):
@@ -97,6 +101,9 @@ class Server():
                 self.buffer[clientAddress].append(message)
         self.buffer_lock.release()
 
+    def __ban(self, clientAddress, message):
+        return
+        
     def run(self):
         self.serverSocket.bind((_SERVER, _SERVER_PORT))
 
@@ -135,7 +142,7 @@ class Server():
                     elif _INBOX in message[0]:
                         self.__inbox(clientAddress, message)
                     elif _BAN in message[:len(_BAN)]:
-                        print('ban')
+                        self.__ban(clientAddress, message)
                     else:
                         message = self.__create_message(clientAddress, message)
                         self.__broadcast(clientAddress, message)

@@ -10,7 +10,7 @@ _BYE: Final[str] = "bye"
 _LIST: Final[str] = "list"
 _INBOX: Final[str] = "@"
 _BAN: Final[str] = "ban "
-
+_DISCONNECT: Final[str] = "disconect%&%"
 
 def time():
     return datetime.now().strftime("%H:%M:%S")

@@ -1,7 +1,7 @@
 import time
 
 class RdtSender:
-    def __init__(self, socket, timeout=20):
+    def __init__(self, socket, timeout=10):
         self.socket = socket
         self.sequence_number = '0'
         self.timeout = timeout

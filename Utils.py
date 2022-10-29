@@ -9,8 +9,11 @@ _CONNECT: Final[str] = "hi, meu nome eh "
 _BYE: Final[str] = "bye"
 _LIST: Final[str] = "list"
 _INBOX: Final[str] = "@"
-_BAN: Final[str] = "ban "
+_BAN: Final[str] = "ban @"
 _DISCONNECT: Final[str] = "disconect%&%"
+
+_BAN_CONDITION: Final[str] = 2/3
+_BAN_TIMEOUT: Final[str] = 60
 
 def time():
     return datetime.now().strftime("%H:%M:%S")

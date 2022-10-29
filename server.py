@@ -1,7 +1,7 @@
 import socket
 from RdtReceiver import RdtReceiver
 from RdtSender import RdtSender
-from Utils import _SERVER, _SERVER_PORT, _BUFFER_SIZE, _CONNECT, _BAN, _BYE, _INBOX, _LIST, time
+from Utils import _SERVER, _SERVER_PORT, _BUFFER_SIZE, _CONNECT, _BAN, _BYE, _INBOX, _LIST, time, _DISCONNECT
 from threading import Thread, Lock
 
 class Server():
@@ -16,14 +16,23 @@ class Server():
 
     def __send(self, clientAddress):    
         rdt = self.clients[clientAddress]['sender']
-        while True:
+        connected = True
+
+        while connected:
             self.buffer_lock.acquire()
             if len(self.buffer[clientAddress]) != 0:
                 if rdt.is_waiting_call():
                     for message in self.buffer[clientAddress]:
+                        if message == _DISCONNECT:
+                            connected = False
+                            break
                         rdt.send(message, clientAddress)
                     self.buffer[clientAddress] = []
             self.buffer_lock.release()
+        
+        del self.clients[clientAddress]
+        del self.buffer[clientAddress]
+        return
 
     def __create_message(self, clientAddress, message):
         return "[" + time() + "] " + self.clients[clientAddress]['name'] + ': ' + message
@@ -52,7 +61,10 @@ class Server():
         name = self.clients[clientAddress]['name']
         print(f"@{name} se desconectou do chat!")
         self.__broadcast(clientAddress, "@" + name + " saiu da sala")
-        del self.clients[clientAddress]
+
+        self.buffer_lock.acquire()
+        self.buffer[clientAddress].append(_DISCONNECT)
+        self.buffer_lock.release()
 
     def __list_clients(self, clientAddress):
         message = '\nLista de usuários:\n'
@@ -102,11 +114,11 @@ class Server():
             self.socket_lock.release()
             if '%&%' in clientMessage.decode():
                 seqnum, message = clientMessage.decode().split('%&%')
-                if not clientAddress in self.clients.keys():             
+                if not clientAddress in self.clients.keys():   
                     self.socket_lock.acquire()
                     message = rdt_receiver.receive(clientAddress, seqnum, message)
                     self.socket_lock.release()
-                
+                    
                     if _CONNECT in message:
                         self.__connect_new_client(message, clientAddress)
                        
@@ -116,6 +128,7 @@ class Server():
                     self.socket_lock.release()
 
                     if _BYE == message:
+                        # TODO: entender acks do bye
                         self.__bye(clientAddress)
                     elif _LIST == message:
                         self.__list_clients(clientAddress)

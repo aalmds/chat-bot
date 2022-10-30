@@ -21,7 +21,6 @@ class Client:
         while True:
             message = input()
             print ("\033[A                             \033[A")
-            # print(f'[{current_time()}] Você: {message}')
             print(colored(f'[{current_time()}] Você: {message}', attrs=["bold"]))
 
             if _CONNECT in message:

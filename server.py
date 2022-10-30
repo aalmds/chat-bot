@@ -70,6 +70,10 @@ class Server():
     def __connect_new_client(self, message, client_address):
         name = message.split("hi, meu nome eh ")[-1]
 
+        if name in self.addresses.keys():
+            print(f"O cliente de endereço {client_address} tentou se conectar, mas @{name} já está em uso!")
+            return
+
         if name in self.ban.keys() and self.ban[name] == 'ban':
             print(f"@{name} tentou se conectar, mas está banido!")
             return
@@ -86,7 +90,7 @@ class Server():
 
         self.addresses[name] = client_address
 
-        self.__broadcast(client_address, "@" + name + " entrou na sala")
+        self.__broadcast(client_address, "@" + name + " entrou na sala.")
 
         self.buffer_lock.acquire()
         self.buffer[client_address] = []
@@ -100,7 +104,7 @@ class Server():
         name = self.clients[client_address]['name']
         print(f"@{name} se desconectou do chat!")
 
-        self.__broadcast(client_address, "@" + name + " saiu da sala")
+        self.__broadcast(client_address, "@" + name + " saiu da sala.")
         self.__update_specific_buffer(client_address, _DISCONNECT)
         
     def __list_clients(self, client_address):
@@ -132,9 +136,9 @@ class Server():
 
                 if self.ban[client] >= len(self.clients) * _BAN_CONDITION:
                     self.ban[client] = 'ban'
-                    print("@" + client + " foi banido da sala!")
-                    self.__broadcast(self.addresses[client], "@" + client + " foi banido da sala")
-                    self.__update_specific_buffer(self.addresses[client], "Você foi banido da sala")
+                    print("@" + client + " foi banido do chat!")
+                    self.__broadcast(self.addresses[client], "@" + client + " foi banido da sala.")
+                    self.__update_specific_buffer(self.addresses[client], "Você foi banido da sala!")
                     self.__update_specific_buffer(self.addresses[client], _DISCONNECT)
 
     def __broadcast(self, origin, message):

@@ -38,9 +38,12 @@ class Server():
                     for message in self.buffer[client_address]:
                         if message == _DISCONNECT:
                             connected = False
-                        else:
-                            rdt.send(message, client_address)
+                            break
+                        rdt.send(message, client_address)
+                   
+                    self.buffer_lock.acquire()
                     self.buffer[client_address] = []
+                    self.buffer_lock.release()
         
         self.address_lock.acquire()
         del self.addresses[self.clients[client_address]['name']]

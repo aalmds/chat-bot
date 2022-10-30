@@ -1,6 +1,6 @@
 import socket
 from termcolor import colored
-from Utils import _SERVER, _SERVER_PORT, _BUFFER_SIZE, time
+from Utils import _SERVER, _SERVER_PORT, _BUFFER_SIZE, current_time
 from RdtSender import RdtSender
 from RdtReceiver import RdtReceiver
 from threading import Thread, Lock
@@ -20,7 +20,7 @@ class Client:
         while True:
             message = input()
             print ("\033[A                             \033[A")
-            print(f'[{time()}] Você: {message}')
+            print(f'[{current_time()}] Você: {message}')
             if self.rdt_sender.is_waiting_call():
                 self.rdt_sender.send(message, (_SERVER, _SERVER_PORT)) 
 

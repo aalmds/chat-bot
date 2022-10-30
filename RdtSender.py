@@ -39,7 +39,6 @@ class RdtSender:
         while not self.waiting:
             if time.time() - start_time > self.timeout:
                 start_time = time.time()
-                print("Enviando pacote pós TIMEOUT", pkt)
                 self.socket.sendto(pkt.encode(), address)
                 
             self.lock.acquire()
@@ -48,8 +47,6 @@ class RdtSender:
                 self.__update_seqnum()
                 self.waiting = True
             self.lock.release()
-            
-    
 
     # Função que retorna se o estado atual do transmissor permite transmissão de uma nova mensagem ou ainda está em espera do ack.
     def is_waiting_call(self):

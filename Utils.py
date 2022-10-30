@@ -13,7 +13,7 @@ _BAN: Final[str] = "ban @"
 _DISCONNECT: Final[str] = "disconect%&%"
 
 _BAN_CONDITION: Final[str] = 2/3
-_BAN_TIMEOUT: Final[str] = 60
+_BAN_TIMEOUT: Final[str] = 30
 
-def time():
+def current_time():
     return datetime.now().strftime("%H:%M:%S")

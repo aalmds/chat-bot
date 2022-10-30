@@ -21,19 +21,20 @@ class Server():
         connected = True
 
         while connected:
-            self.buffer_lock.acquire()
             if len(self.buffer[client_address]) != 0:
                 if rdt.is_waiting_call():
                     for message in self.buffer[client_address]:
                         if message == _DISCONNECT:
                             connected = False
-                            break
-                        rdt.send(message, client_address)
+                        else:
+                            rdt.send(message, client_address)
                     self.buffer[client_address] = []
-            self.buffer_lock.release()  
         
         del self.clients[client_address]
+
+        self.buffer_lock.acquire()
         del self.buffer[client_address]
+        self.buffer_lock.release()
         return
 
     def __create_message(self, client_address, message):
@@ -45,13 +46,12 @@ class Server():
         self.buffer_lock.release()
         
     def __connect_new_client(self, message, client_address):
-        #TODO: decidir se vai ser por nome ou endereço
         name = message.split("hi, meu nome eh ")[-1]
 
         if name in self.ban.keys() and self.ban[name] == 'ban':
-            print("@", name, "tentou se conectar, mas está banido")
+            print(f"@{name} tentou se conectar, mas está banido!")
             return
-        
+
         print(f"@{name} se conectou ao chat!")
 
         self.clients[client_address] = {
@@ -101,41 +101,37 @@ class Server():
                 self.buffer[client_address].append(message)
         self.buffer_lock.release()
 
-    def __ban(self, client_address, message):
+    def __ban(self, message):
         client = message[len(_BAN):]    
-        message = self.__create_message(client_address, message)
-        self.__broadcast(client_address, message)
-        
+                
+        print("@" + client + " recebeu um ban!")
         if client not in self.ban.keys():
             self.ban[client] = 1
-            print("@" + client + " recebeu um ban!")
-        else:
+        elif self.ban[client] != 'ban':
             self.ban[client] += 1
-            print("@" + client + " recebeu um ban!")
-            if self.ban[client] >= len(self.clients)*_BAN_CONDITION:
+            if self.ban[client] >= len(self.clients) * _BAN_CONDITION:
                 self.ban[client] = 'ban'
-                print("@" + client + " foi banido da sala")
+                print("@" + client + " foi banido da sala!")
                 for address in self.clients.keys():
                     client_name = self.clients[address]['name']
                     if client_name == client:
                         self.__broadcast(address, "@" + client + " foi banido da sala")
                         self.__update_specific_buffer(address, "Você foi banido da sala")
                         self.__update_specific_buffer(address, _DISCONNECT)
+                        break
+                                
         
     def run(self):
         self.serverSocket.bind((_SERVER, _SERVER_PORT))
-
         print("O chat está on!")
         
         while True:
             rdt_receiver = RdtReceiver(self.serverSocket)
             
-            self.socket_lock.acquire()
             try:
                 clientMessage, client_address = self.serverSocket.recvfrom(_BUFFER_SIZE)
             except socket.timeout:
                 continue
-            self.socket_lock.release()
 
             if '%&%' in clientMessage.decode():
                 seqnum, message = clientMessage.decode().split('%&%')
@@ -152,20 +148,23 @@ class Server():
                     self.socket_lock.release()
 
                     if _BYE == message:
-                        # TODO: entender acks do bye
                         self.__bye(client_address)
                     elif _LIST == message:
                         self.__list_clients(client_address)
-                    elif _INBOX in message[0]:
+                    elif _INBOX == message[0] and _INBOX != message:
                         self.__inbox(client_address, message)
                     elif _BAN in message[:len(_BAN)]:
-                        # se o ban nao foi chamado nos ultimos 60s
-                        self.__ban(client_address, message)
+                        client_message = self.__create_message(client_address, message)
+                        self.__broadcast(client_address, client_message)
+                        self.__ban(message)
                     else:
                         message = self.__create_message(client_address, message)
                         self.__broadcast(client_address, message)
             else:
+                lock = self.clients[client_address]['sender'].get_lock()
+                lock.acquire()
                 self.clients[client_address]['sender'].set_ack(clientMessage.decode())
+                lock.release()
                     
 if __name__ == "__main__":
     server = Server()

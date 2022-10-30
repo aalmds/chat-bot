@@ -23,7 +23,6 @@ class RdtReceiver:
             self.socket.sendto(ack, address)
 
             message, _ = self.socket.recvfrom(_BUFFER_SIZE)
-            
             seqnum, message = message.decode().split('%&%')
 
         # Enviando o ack referente ao pacote que foi recebido corretamente.

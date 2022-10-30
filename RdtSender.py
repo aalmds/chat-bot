@@ -1,4 +1,5 @@
 import time
+from threading import Lock
 
 class RdtSender:
     def __init__(self, socket, timeout=10):
@@ -7,10 +8,15 @@ class RdtSender:
         self.timeout = timeout
         # Definindo o estado inicial como o de espera por uma mensagem a ser transferida.
         self.waiting = True
+
+        self.lock = Lock()
         self.ack = -1
 
     def set_ack(self, ack):
         self.ack = ack
+
+    def get_lock(self):
+        return self.lock
 
     # Função que verifica se o ack recebido é referente ao pacote que foi enviado por último.
     def __check_ack(self):
@@ -32,14 +38,17 @@ class RdtSender:
         # Enquanto está no estado de espera pelo ack correto, continua retransmitindo o último pacote enviado após timeout.
         while not self.waiting:
             if time.time() - start_time > self.timeout:
-                self.socket.sendto(pkt.encode(), address)
                 start_time = time.time()
-                continue
-
+                print("Enviando pacote pós TIMEOUT", pkt)
+                self.socket.sendto(pkt.encode(), address)
+                
+            self.lock.acquire()
             if self.__check_ack():
                 self.ack = -1
                 self.__update_seqnum()
                 self.waiting = True
+            self.lock.release()
+            
     
 
     # Função que retorna se o estado atual do transmissor permite transmissão de uma nova mensagem ou ainda está em espera do ack.

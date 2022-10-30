@@ -1,4 +1,4 @@
-from Utils import _BUFFER_SIZE
+from utils import _BUFFER_SIZE
 
 # Classe de abstração para a máquina de estados do protocolo de transferência confiável do receptor.
 class RdtReceiver:

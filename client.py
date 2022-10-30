@@ -1,17 +1,17 @@
 import socket
 from termcolor import colored
-from Utils import _SERVER, _SERVER_PORT, _BUFFER_SIZE, current_time
-from RdtSender import RdtSender
-from RdtReceiver import RdtReceiver
+from utils import _SERVER, _SERVER_PORT, _BUFFER_SIZE, current_time
+from rdt.RdtSender import RdtSender
+from rdt.RdtReceiver import RdtReceiver
 from threading import Thread, Lock
 
 class Client:
     def __init__(self):
         self.socket_lock = Lock()
-        self.clientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         
-        self.rdt_sender = RdtSender(self.clientSocket)
-        self.rdt_receiver = RdtReceiver(self.clientSocket)
+        self.rdt_sender = RdtSender(self.client_socket)
+        self.rdt_receiver = RdtReceiver(self.client_socket)
 
         self.ths = Thread(target=self.__send)
         self.ths.daemon = True
@@ -29,7 +29,7 @@ class Client:
 
         while True:
             try:
-                message, serverAddress = self.clientSocket.recvfrom(_BUFFER_SIZE)
+                message, server_address = self.client_socket.recvfrom(_BUFFER_SIZE)
             except socket.timeout:
                 continue
 
@@ -37,7 +37,7 @@ class Client:
                 seqnum, message = message.decode().split('%&%')
                 
                 self.socket_lock.acquire()
-                message = self.rdt_receiver.receive(serverAddress, seqnum, message)
+                message = self.rdt_receiver.receive(server_address, seqnum, message)
                 self.socket_lock.release()
                 
                 print(colored(str(message), 'cyan'))         

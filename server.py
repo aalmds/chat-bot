@@ -1,9 +1,9 @@
-from http import client
 import socket
 from RdtReceiver import RdtReceiver
 from RdtSender import RdtSender
-from Utils import _SERVER, _SERVER_PORT, _BUFFER_SIZE, _CONNECT, _BAN, _BYE, _INBOX, _LIST, time, _DISCONNECT, _BAN_CONDITION, _BAN_TIMEOUT
+from Utils import _SERVER, _SERVER_PORT, _BUFFER_SIZE, _CONNECT, _BAN, _BYE, _INBOX, _LIST, current_time, _DISCONNECT, _BAN_CONDITION, _BAN_TIMEOUT
 from threading import Thread, Lock
+import time
 
 class Server():
     def __init__(self):
@@ -15,6 +15,8 @@ class Server():
 
         self.clients = {}
         self.ban = {} 
+
+        self.ban_time = -1
 
     def __send(self, client_address):    
         rdt = self.clients[client_address]['sender']
@@ -38,7 +40,7 @@ class Server():
         return
 
     def __create_message(self, client_address, message):
-        return "[" + time() + "] " + self.clients[client_address]['name'] + ': ' + message
+        return "[" + current_time() + "] " + self.clients[client_address]['name'] + ': ' + message
     
     def __update_specific_buffer(self, client_address, message):
         self.buffer_lock.acquire()
@@ -118,8 +120,7 @@ class Server():
                         self.__broadcast(address, "@" + client + " foi banido da sala")
                         self.__update_specific_buffer(address, "Você foi banido da sala")
                         self.__update_specific_buffer(address, _DISCONNECT)
-                        break
-                                
+                        break        
         
     def run(self):
         self.serverSocket.bind((_SERVER, _SERVER_PORT))
@@ -154,9 +155,13 @@ class Server():
                     elif _INBOX == message[0] and _INBOX != message:
                         self.__inbox(client_address, message)
                     elif _BAN in message[:len(_BAN)]:
-                        client_message = self.__create_message(client_address, message)
-                        self.__broadcast(client_address, client_message)
-                        self.__ban(message)
+                        if self.ban_time == -1 or time.time() - self.ban_time >= _BAN_TIMEOUT:  
+                            self.ban_time = time.time()
+                            client_message = self.__create_message(client_address, message)
+                            self.__broadcast(client_address, client_message)
+                            self.__ban(message)
+                        else:
+                            self.__update_specific_buffer(client_address, "Você não pode solicitar esse comando ainda...")
                     else:
                         message = self.__create_message(client_address, message)
                         self.__broadcast(client_address, message)

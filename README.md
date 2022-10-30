@@ -1,28 +1,31 @@
 # Chat-bot
 
-Este é um projeto da disciplina Infraestrutura de Comunicação e nosso objetivo é implementar um chat utilizando cliente e servidor UDP com transmissão confiável (rdt3.0).
+Projeto da disciplina Infraestrutura de Comunicação que tem o objetivo de implementar um chat de múltiplos clientes utilizando comunicação cliente-servidor com protocolo UDP e de transmissão confiável (rdt3.0).
 
-## Pré-requisitos
+## Setup inicial
 
-Antes de começar, você vai precisar ter instalado em sua máquina as seguintes ferramentas:
+Antes de começar, você precisa instalar, caso não tenha, as seguintes ferramentas:
 
-- [Python 3](https://www.python.org/downloads/)
+- [Python 3.10](https://www.python.org/downloads/)
 
-- [Biblioteca termcolor](https://pypi.org/project/termcolor/)
-
+- [Termcolor](https://pypi.org/project/termcolor/)
 ```bash
   pip install termcolor
+```
+- [Typing](https://pypi.org/project/typing/)
+```bash
+  pip install typing
 ```
 
 ## Como usar
 
-Primeiramente, rodamos o servidor, com o seguinte comando:
+Primeiramente, abra um terminal e execute o servidor utilizando o seguinte comando:
 
 ```bash
   python3 server.py
 ```
 
-Depois disso, em terminais diferentes rodamos cada cliente, com o seguinte comando:
+Depois disso, abra um terminal para cada cliente e, em todos, execute o seguinte comando:
 
 ```bash
   python3 client.py
@@ -30,7 +33,7 @@ Depois disso, em terminais diferentes rodamos cada cliente, com o seguinte coman
 
 ### Comandos
 
-Nosso chat possui as seguintes funcionalidades que podem ser solicitadas através de linhas de comando pelos clientes:
+O chat possui as seguintes funcionalidades que podem ser solicitadas através de linhas de comando pelos clientes:
 
 - Conectar à sala
 
@@ -50,13 +53,13 @@ Nosso chat possui as seguintes funcionalidades que podem ser solicitadas atravé
   list
 ```
 
-- Mensagem particular (inbox):
+- Enviar uma mensagem particular (inbox):
 
 ```bash
   @<nome_de_usuario> <mensagem>
 ```
 
-- Expulsão:
+- Solicitar banimento de um usuário:
 
 ```bash
   ban @<nome_de_usuario>

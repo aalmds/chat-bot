@@ -21,14 +21,15 @@ class Client:
         while True:
             message = input()
             print ("\033[A                             \033[A")
-            print(f'[{current_time()}] Você: {message}')
+            # print(f'[{current_time()}] Você: {message}')
+            print(colored(f'[{current_time()}] Você: {message}', attrs=["bold"]))
 
             if _CONNECT in message:
                 self.rdt_sender = RdtSender(self.client_socket)
                 self.rdt_receiver = RdtReceiver(self.client_socket)
 
             if self.rdt_sender.is_waiting_call():
-                self.rdt_sender.send(message, (_SERVER, _SERVER_PORT))              
+                self.rdt_sender.send(message + "%&% ", (_SERVER, _SERVER_PORT))              
 
     def run(self):
         self.ths.start()
@@ -40,13 +41,13 @@ class Client:
                 continue
 
             if '%&%' in message.decode():
-                seqnum, message = message.decode().split('%&%')
+                seqnum, message, color = message.decode().split('%&%')
                 
                 self.socket_lock.acquire()
-                message = self.rdt_receiver.receive(server_address, seqnum, message)
+                message, color = self.rdt_receiver.receive(server_address, seqnum, message, color)
                 self.socket_lock.release()
                 
-                print(colored(str(message), 'cyan'))         
+                print(colored(str(message), color, attrs=["bold"]))         
 
             else:
                 lock = self.rdt_sender.get_lock()

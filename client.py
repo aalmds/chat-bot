@@ -1,6 +1,6 @@
 import socket
 from termcolor import colored
-from utils import _SERVER, _SERVER_PORT, _BUFFER_SIZE, current_time
+from utils import _SERVER, _SERVER_PORT, _BUFFER_SIZE, _CONNECT, current_time
 from rdt.RdtSender import RdtSender
 from rdt.RdtReceiver import RdtReceiver
 from threading import Thread, Lock
@@ -17,12 +17,18 @@ class Client:
         self.ths.daemon = True
                 
     def __send(self):
+
         while True:
             message = input()
             print ("\033[A                             \033[A")
             print(f'[{current_time()}] Você: {message}')
+
+            if _CONNECT in message:
+                self.rdt_sender = RdtSender(self.client_socket)
+                self.rdt_receiver = RdtReceiver(self.client_socket)
+
             if self.rdt_sender.is_waiting_call():
-                self.rdt_sender.send(message, (_SERVER, _SERVER_PORT)) 
+                self.rdt_sender.send(message, (_SERVER, _SERVER_PORT))              
 
     def run(self):
         self.ths.start()

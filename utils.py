@@ -15,5 +15,15 @@ _DISCONNECT: Final[str] = "disconect%&%"
 _BAN_CONDITION: Final[str] = 2/3
 _BAN_TIMEOUT: Final[str] = 15
 
+_BAN_COLOR: Final[str] = "%&%red"
+_CONNECTION_COLOR: Final[str] = "%&%green"
+_INBOX_COLOR: Final[str] = "%&%blue"
+
+_COLORS: Final[str] = [
+    "%&%cyan",
+    "%&%yellow",
+    "%&%magenta"
+]
+
 def current_time():
     return datetime.now().strftime("%H:%M:%S")
